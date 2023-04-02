@@ -1,6 +1,6 @@
 <template>
   <div class="tab-bar">
-    <van-tabbar v-model="currentIndex" active-color="#ff9854">
+    <van-tabbar v-model="currentIndex" active-color="#ff9854" route>
       <template v-for="(item, index) in tabBarData" :key="item.name">
         <van-tabbar-item :to="item.path">
           <template #default>
@@ -17,11 +17,21 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import tabBarData from '@/assets/localData/tabBarData'
 import { getAssetsURL } from '@/utils/get_assets_img.js'
+import { useRoute } from 'vue-router'
 
 const currentIndex = ref(0)
+// 监听路由变化，找到对应的索引，设置 curentIndex 的值
+// 因为图标用的是本地图片，不是Vant库里的，所以有点麻烦
+const route = useRoute() // useRoute 返回当前路由地址
+watch(route, (newRoute) => {
+  // console.log(newRoute.path)
+  const index = tabBarData.findIndex((item) => item.path === newRoute.path)
+  if (index === -1) return
+  currentIndex.value = index
+})
 </script>
 
 <style scoped lang="less">

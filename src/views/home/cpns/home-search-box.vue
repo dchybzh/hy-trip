@@ -1,7 +1,7 @@
 <template>
   <div class="search-box">
     <!-- 1.位置信息 -->
-    <div class="location border-gray-line">
+    <div class="location">
       <div class="city" @click="cityClick">{{ currentCity.cityName }}</div>
       <div class="position" @click="positionClick">
         <span class="text">我的位置</span>
@@ -13,12 +13,12 @@
     <div class="section date-range border-gray-line" @click="showCalendar = true">
       <div class="start">
         <span class="tip">入住</span>
-        <span class="time">{{ startTime }}</span>
+        <span class="time">{{ startDateStr }}</span>
       </div>
       <div class="stay">共{{ stayCount }}晚</div>
       <div class="end">
         <span class="tip">离店</span>
-        <span class="time">{{ endTime }}</span>
+        <span class="time">{{ endDateStr }}</span>
       </div>
     </div>
     <van-calendar v-model:show="showCalendar" type="range" color="#ff9854" :round="false" @confirm="onConfirm" :show-confirm="false" />
@@ -30,23 +30,28 @@
     <!-- 关键字区域 -->
     <div class="section keyword border-gray-line">关键字/位置/民宿名</div>
     <!-- 4.热门建议 -->
-    <div class="hot-suggests">
+    <div class="section hot-suggests">
       <template v-for="item in hotSuggests" :key="item.tagText.text">
         <div class="item" :style="{ color: item.tagText.color, background: item.tagText.background.color }">
           {{ item.tagText.text }}
         </div>
       </template>
     </div>
+    <!-- 5.搜索按钮 -->
+    <div class="section search-btn" @click="searchBtnClick">
+      <div class="btn">开始搜索</div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, computed } from 'vue'
 import useCityStore from '@/stores/modules/city'
 import { useHomeStore } from '@/stores/modules/home'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { formatMonthDay, getDiffDays } from '@/utils/format_time'
+import { useMainStore } from '@/stores/modules/main'
 
 // 0.先拿到 router
 const router = new useRouter()
@@ -78,14 +83,12 @@ const cityStore = useCityStore()
 const { currentCity } = storeToRefs(cityStore)
 
 // 4.日期范围的处理
-const nowDate = new Date()
-const newDate = new Date()
-// 注意，这里不能使用nowDate，否则就把之前的nowDate改了，所以要再次 new Date()
-newDate.setDate(newDate.getDate() + 1)
-
-const startTime = ref(formatMonthDay(nowDate))
-const endTime = ref(formatMonthDay(newDate))
-const stayCount = ref(getDiffDays(nowDate, newDate))
+const mainStore = useMainStore()
+const { startDate, endDate } = storeToRefs(mainStore)
+// console.log(startDate.value, endDate)
+const startDateStr = computed(() => formatMonthDay(startDate.value))
+const endDateStr = computed(() => formatMonthDay(endDate.value))
+const stayCount = ref(getDiffDays(startDate.value, endDate.value))
 
 // 5.选择日期区间
 const showCalendar = ref(false)
@@ -95,9 +98,8 @@ const onConfirm = (value) => {
   const selectStartDate = value[0]
   const selectEndDate = value[1]
   // console.log(selectStartDate, selectEndDate, '--value--')
-
-  startTime.value = formatMonthDay(selectStartDate)
-  endTime.value = formatMonthDay(selectEndDate)
+  mainStore.startDate = selectStartDate
+  mainStore.endDate = selectEndDate
   stayCount.value = getDiffDays(selectStartDate, selectEndDate)
   // 2.隐藏日历
   showCalendar.value = false
@@ -106,6 +108,18 @@ const onConfirm = (value) => {
 // 6.热门城市建议
 const homeStore = useHomeStore()
 const { hotSuggests } = storeToRefs(homeStore)
+
+// 7.监听搜索按钮，跳转的同时要传递一些参数
+const searchBtnClick = () => {
+  router.push({
+    path: '/search',
+    query: {
+      startDate: startDate.value,
+      endDate: endDate.value,
+      currentCity: currentCity.value.cityName
+    }
+  })
+}
 </script>
 
 <style scoped lang="less">
@@ -187,16 +201,33 @@ const { hotSuggests } = storeToRefs(homeStore)
 }
 
 .hot-suggests {
-  display: flex;
-  flex-wrap: wrap;
+  // display: flex;
+  // flex-wrap: wrap;
   margin: 10px 0;
-  padding: 0 20px;
+  height: auto; // 为了不继承 section 的高度，设置为auto
 
   .item {
     padding: 4px 8px;
     border-radius: 14px;
     margin: 4px;
     font-size: 12px;
+  }
+}
+
+.search-btn {
+  .btn {
+    width: 100%;
+    // width: 342px;
+    height: 38px;
+    max-height: 50px;
+    text-align: center;
+    line-height: 38px;
+    // background-image: linear-gradient(90deg, #fa8c1d, #fcaf3f);
+    background-image: var(--theme-linear-gradient);
+    border-radius: 30px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 500;
   }
 }
 </style>
