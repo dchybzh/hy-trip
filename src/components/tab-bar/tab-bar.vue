@@ -26,6 +26,7 @@ const currentIndex = ref(0)
 // 监听路由变化，找到对应的索引，设置 curentIndex 的值
 // 因为图标用的是本地图片，不是Vant库里的，所以有点麻烦
 const route = useRoute() // useRoute 返回当前路由地址
+
 watch(route, (newRoute) => {
   // console.log(newRoute.path)
   const index = tabBarData.findIndex((item) => item.path === newRoute.path)
